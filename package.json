@@ -1,0 +1,20 @@
+{
+  "name": "frag-upload",
+  "version": "1.0.0",
+  "description": "一个开箱即用的断点续传工具",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LinkSofuny/frag-upload.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LinkSofuny/frag-upload/issues"
+  },
+  "homepage": "https://github.com/LinkSofuny/frag-upload#readme"
+}
