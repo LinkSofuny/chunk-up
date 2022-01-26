@@ -3,6 +3,7 @@ function createHashComputer (fileChunkList) {
     const spark = new self.SparkMD5.ArrayBuffer()  // @todo
     const reader = new FileReader()
 
+    // 配合慢启动的话 这里得重构 @todo
     function allFileHash(index) {
         let percentage = 0
         let count = 0
