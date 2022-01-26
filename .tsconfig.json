@@ -1,0 +1,15 @@
+{
+    "include": ["./src/*"],
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "lib": ["es5", "es2015.promise"],
+        "allowJs": true,
+        "checkJs": true,
+        "removeComments": true,
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true
+    }
+}
