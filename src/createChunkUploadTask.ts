@@ -1,6 +1,45 @@
-import {
-  IChunkUploadTask, TFileChunkDataItem, TCalhash, TprogressInner,
-} from '../types/createChunkUploadTask'
+export type TFileChunkDataItem = {
+  fileHash: string
+  chunk: Blob
+  hash: string
+  percentage: number
+  index: number
+}
+interface uploadedStatus {
+  shouldUpload: boolean
+  uploadedList: string[]
+}
+
+export type TprogressInner = (e: any) => any // @todo
+
+export type TprogressHanlder = (item: TFileChunkDataItem) => TprogressInner
+
+export type TchunkRequest = (data: object, onProgress: TprogressHanlder) => void
+
+export type TcheckUploaded = (filename: string, fileHash: string) => uploadedStatus
+
+export type TmergeRequest = (filename: string, size: number, fileHash: string) => void
+
+export type TCalhash = {
+  hash: string
+  percentage: string
+}
+export interface IChunkUploadTask {
+  chunkRequset: TchunkRequest
+  mergeRequest: TmergeRequest
+  checkUploaded: TcheckUploaded
+  file: File
+  size?: number
+  allCal?: boolean
+  concurNum?: number
+}
+// self.importScripts or either will doesn't work it declare that
+declare global {
+  interface Window {
+    importScripts: any
+    SparkMD5: any
+  }
+}
 
 const SIZE = 10 * 1024 * 1024
 
@@ -38,7 +77,7 @@ export default async function createChunkUploadTask({
   // 计算hash
   function calculateHash(): Promise<TCalhash> {
     return new Promise((resolve) => {
-      const worker = new Worker('src/utils/hash.js')
+      const worker = new Worker('/Users/chenyudong/note/frag-upload/src/hash.ts')
       worker.postMessage({ fileChunkList: allCal ? fileChunkList : file })
       worker.onmessage = (e) => {
         const { percentage, hash } = e.data
@@ -77,7 +116,7 @@ export default async function createChunkUploadTask({
      * @param {*} requsetList 切片数组
      * @param {*} concurrencyControlNum 并发数量
      */
-  async function concurrencyControl(requsetList, concurrencyControlNum: number) {
+  async function concurrencyControl(requsetList: any, concurrencyControlNum: number) {
     return new Promise((resolve) => {
       const len = requsetList.length
       let max = concurrencyControlNum

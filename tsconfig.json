@@ -1,5 +1,5 @@
 {
-    "include": ["./src/*"],
+    "include": ["**/*.ts"],
     "compilerOptions": {
         "target": "es5",
         "module": "commonjs",
@@ -10,6 +10,7 @@
         "strict": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "noImplicitReturns": true
-    }
+        "noImplicitReturns": true,
+        "rootDirs": ["src"]
+    },
 }
