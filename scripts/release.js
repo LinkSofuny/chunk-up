@@ -1,9 +1,15 @@
-const chalk = require('chalk')
-const semver = require('semver')
-const { prompt } = require('enquirer')
-const execa = require('execa')
-const args = require('minimist')(process.argv.slice(2))
-const currentVersion = require('../package.json').version
+import chalk from 'chalk'
+import semver from 'semver'
+import enquirer from 'enquirer'
+import minimist from 'minimist'
+import { execa } from 'execa'
+// eslint-disable-next-line import/extensions
+import packageJSON from '../package.json'
+
+const args = minimist(process.argv.slice(2))
+const currentVersion = packageJSON.version
+const { prompt } = enquirer
+// const { semver } = semverPkg
 
 const preId = args.preid
   || (semver.prerelease(currentVersion) && semver.prerelease(currentVersion)[0])
@@ -49,7 +55,8 @@ async function main() {
         })
       ).version
     } else {
-      targetVersion = release.match(/\((.*)\)/)[1]
+      // it's equal with targetVersion = release.match(/\((.*)\)/)[1]
+      [targetVersion] = release.match(/\((.*)\)/)
     }
   }
 
@@ -84,7 +91,7 @@ async function main() {
   // build all packages with types
   step('\nBuilding all packages...')
   if (!skipBuild && !isDryRun) {
-    await run('npm', ['run', 'build', '--', '--release'])
+    await run('npm', ['run', 'build', '--', '--release']) // @todo
     // test generated dts files
     // step('\nVerifying type declarations...')
     // await run('npm', ['run', 'test-dts-only'])
