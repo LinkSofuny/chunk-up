@@ -1,17 +1,17 @@
 /* eslint-disable no-restricted-globals */
 self.importScripts('./spark-md5.min.js'); // @todo 网络引用 or npm
-function createHashComputer(fileChunkList) {
+function createHashComputer(fileChunkList: { fileChunk: Blob }[]) {
   const spark = new self.SparkMD5.ArrayBuffer(); // @todo
   const reader = new FileReader();
 
   // 配合慢启动的话 这里得重构 @todo
-  function allFileHash(index) {
+  function allFileHash(index: number) {
     let percentage = 0;
     let count = 0;
-    reader.readAsArrayBuffer(fileChunkList[index].file);
-    reader.onload = (e) => {
+    reader.readAsArrayBuffer(fileChunkList[index].fileChunk);
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       count++;
-      spark.append(e.target.result);
+      spark.append(e.target?.result);
 
       if (count === fileChunkList.length) {
         self.postMessage({
@@ -29,7 +29,7 @@ function createHashComputer(fileChunkList) {
       }
     };
   }
-  function partFileHash(file) {
+  function partFileHash(file: File) {
     const offset = 2 * 1024 * 1024;
     const fileSize = file.size;
     // 前切块
@@ -51,8 +51,8 @@ function createHashComputer(fileChunkList) {
     }
     // 拼接
     reader.readAsArrayBuffer(new Blob(chunks));
-    reader.onload = (e) => {
-      spark.append(e.target.result);
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      spark.append(e.target?.result);
       self.postMessage({
         percentage: 100,
         hash: spark.end(),

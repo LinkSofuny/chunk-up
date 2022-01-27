@@ -3,7 +3,7 @@
     "compilerOptions": {
         "target": "es5",
         "module": "commonjs",
-        "lib": ["DOM", "es5", "es2015.promise"],
+        "lib": ["DOM", "es5", "es2015.promise", "es2016"],
         "allowJs": true,
         "checkJs": true,
         "removeComments": true,

@@ -1,4 +1,6 @@
-import { ChunkUploadTask, fileChunkDataItem, calhash } from '../types/createChunkUploadTask'
+import {
+  IChunkUploadTask, TFileChunkDataItem, TCalhash, TprogressInner,
+} from '../types/createChunkUploadTask'
 
 const SIZE = 10 * 1024 * 1024
 
@@ -10,9 +12,9 @@ export default async function createChunkUploadTask({
   size = SIZE,
   allCal = true,
   concurNum = 4,
-}: ChunkUploadTask): Promise<void> {
-  const fileChunkList: {fileChunk: Blob}[] = []
-  let fileChunkData: fileChunkDataItem[] = []
+}: IChunkUploadTask): Promise<void> {
+  const fileChunkList: { fileChunk: Blob }[] = []
+  let fileChunkData: TFileChunkDataItem[] = []
   // 创建切片和文件hash
   function createFileChunk() {
     let cur = 0
@@ -34,7 +36,7 @@ export default async function createChunkUploadTask({
   }
 
   // 计算hash
-  function calculateHash(): Promise<calhash> {
+  function calculateHash(): Promise<TCalhash> {
     return new Promise((resolve) => {
       const worker = new Worker('src/utils/hash.js')
       worker.postMessage({ fileChunkList: allCal ? fileChunkList : file })
@@ -48,12 +50,12 @@ export default async function createChunkUploadTask({
   }
 
   // 进度条
-  function createProgressHandler(item: fileChunkDataItem) {
-    return (e) => {
+  function createProgressHandler(item: TFileChunkDataItem): TprogressInner {
+    return (e: any) => {
+      console.log(e, 'e')
       item.percentage = parseInt(String((e.loaded / e.total) * 100), 10)
     }
   }
-
   function createUploadRequest(uploadedList: string[] = []) {
     const requsetList = fileChunkData
       .filter(({ hash }) => !uploadedList.includes(hash))
@@ -75,7 +77,7 @@ export default async function createChunkUploadTask({
      * @param {*} requsetList 切片数组
      * @param {*} concurrencyControlNum 并发数量
      */
-  async function concurrencyControl(requsetList, concurrencyControlNum) {
+  async function concurrencyControl(requsetList, concurrencyControlNum: number) {
     return new Promise((resolve) => {
       const len = requsetList.length
       let max = concurrencyControlNum
@@ -84,11 +86,12 @@ export default async function createChunkUploadTask({
       const start = async () => {
         while (idx < len && max > 0) {
           max--
+          // @todo
           requsetList[idx++]().then(() => {
             max++
             counter++
             if (counter === len) {
-              resolve()
+              resolve('ok') // @todo
             } else {
               start()
             }
@@ -100,11 +103,11 @@ export default async function createChunkUploadTask({
   }
 
   createFileChunk()
-  const { hash, percentage } = await calculateHash()
+  const { hash } = await calculateHash()
   createfileChunkData(hash)
   const { shouldUpload, uploadedList } = await checkUploaded(file.name, hash)
   if (!shouldUpload) {
-    // 不许要重新上传 todo
+    // 不许要重新上传 @todo
     console.log('上传过了')
     return
   }
