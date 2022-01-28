@@ -42,6 +42,7 @@ declare global {
 }
 
 const SIZE = 10 * 1024 * 1024
+import calHash from './hash'
 
 export default async function createChunkUploadTask({
   chunkRequset,
@@ -77,7 +78,7 @@ export default async function createChunkUploadTask({
   // 计算hash
   function calculateHash(): Promise<TCalhash> {
     return new Promise((resolve) => {
-      const worker = new Worker('/Users/chenyudong/note/frag-upload/src/hash.ts')
+      const worker = new Worker(calHash)
       worker.postMessage({ fileChunkList: allCal ? fileChunkList : file })
       worker.onmessage = (e) => {
         const { percentage, hash } = e.data
@@ -91,7 +92,6 @@ export default async function createChunkUploadTask({
   // 进度条
   function createProgressHandler(item: TFileChunkDataItem): TprogressInner {
     return (e: any) => {
-      console.log(e, 'e')
       item.percentage = parseInt(String((e.loaded / e.total) * 100), 10)
     }
   }

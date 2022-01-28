@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "release": "node --experimental-json-modules scripts/release.js --dry",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
-    "build": "tsc --outDir dist/lib --declarationDir dist/types --declaration true && rollup -c"
+    "build": "rollup -c"
   },
   "repository": {
     "type": "git",
@@ -23,25 +23,23 @@
   },
   "homepage": "https://github.com/LinkSofuny/frag-upload#readme",
   "devDependencies": {
-    "@babel/core": "^7.16.12",
-    "@babel/preset-env": "^7.16.11",
     "@typescript-eslint/eslint-plugin": "^5.10.1",
     "@typescript-eslint/parser": "^5.10.1",
     "chalk": "^5.0.0",
     "conventional-changelog": "^3.1.25",
     "cz-conventional-changelog": "^3.3.0",
+    "enquirer": "^2.3.6",
+    "@rollup/plugin-json": "^4.0.0",
     "eslint": "^8.7.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.25.4",
-    "rollup-plugin-babel": "^4.4.0",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "supervisor": "^0.12.0"
-  },
-  "dependencies": {
-    "enquirer": "^2.3.6",
     "execa": "^6.0.0",
     "minimist": "^1.2.5",
-    "semver": "^7.3.5"
+    "rollup": "~2.38.5",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-typescript2": "^0.27.2",
+    "semver": "^7.3.5",
+    "supervisor": "^0.12.0"
   },
   "config": {
     "commitizen": {

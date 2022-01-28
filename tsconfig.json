@@ -1,8 +1,10 @@
 {
     "include": ["**/*.ts"],
     "compilerOptions": {
-        "target": "es5",
-        "module": "commonjs",
+        "outDir": "dist",
+        "sourceMap": false,
+        "target": "es2016",
+        "module": "esnext",
         "lib": ["DOM", "es5", "es2015.promise", "es2016"],
         "allowJs": true,
         "checkJs": true,
@@ -11,6 +13,6 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noImplicitReturns": true,
-        "rootDirs": ["src"]
+        "rootDir": ".",
     },
 }
