@@ -1,15 +1,19 @@
 {
   "name": "frag-upload",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "一个开箱即用的断点续传工具",
-  "main": "dist/out/index.js",
   "type": "module",
-  "types": "dist/index.d.ts",
+  "types": "dist/fragUpload.d.ts",
+  "main": "dist/fragUpload.umd.js",
+  "module": "dist/fragUpload.esm.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "release": "node --experimental-json-modules scripts/release.js --dry",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
-    "build": "rollup -c"
+    "build:esm": "rollup -c --environment FORMAT:esm",
+    "build:umd": "rollup -c --environment FORMAT:umd",
+    "build:min": "rollup -c --environment FORMAT:min",
+    "build": "rimraf dist/* && run-p build:esm build:umd build:min"
   },
   "repository": {
     "type": "git",
@@ -21,22 +25,38 @@
   "bugs": {
     "url": "https://github.com/LinkSofuny/frag-upload/issues"
   },
+  "files": [
+    "index.js",
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "homepage": "https://github.com/LinkSofuny/frag-upload#readme",
   "devDependencies": {
+    "@babel/core": "^7.16.12",
+    "@babel/preset-env": "^7.16.11",
+    "@babel/preset-typescript": "^7.16.7",
+    "@rollup/plugin-json": "^4.0.0",
     "@typescript-eslint/eslint-plugin": "^5.10.1",
     "@typescript-eslint/parser": "^5.10.1",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-preset-latest": "^6.24.1",
     "chalk": "^5.0.0",
     "conventional-changelog": "^3.1.25",
     "cz-conventional-changelog": "^3.3.0",
     "enquirer": "^2.3.6",
-    "@rollup/plugin-json": "^4.0.0",
     "eslint": "^8.7.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.25.4",
     "execa": "^6.0.0",
+    "lodash.merge": "^4.6.2",
     "minimist": "^1.2.5",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^3.0.2",
     "rollup": "~2.38.5",
+    "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^7.0.2",
     "rollup-plugin-typescript2": "^0.27.2",
     "semver": "^7.3.5",
     "supervisor": "^0.12.0"

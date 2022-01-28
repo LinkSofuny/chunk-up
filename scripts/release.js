@@ -91,8 +91,8 @@ async function main() {
   // build all packages with types
   step('\nBuilding all packages...')
   if (!skipBuild && !isDryRun) {
-    await run('npm', ['run', 'build', '--', '--release']) // @todo
-    // test generated dts files
+    await run('npm', ['run', 'build'])
+    // test generated dts files @todo
     // step('\nVerifying type declarations...')
     // await run('npm', ['run', 'test-dts-only'])
   } else {
