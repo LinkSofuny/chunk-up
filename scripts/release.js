@@ -83,11 +83,6 @@ async function main() {
   //     console.log('(skipped)')
   //   }
 
-  // @todo 暂时用不上
-  // update all package versions and inter-dependencies
-  //   step('\nUpdating cross dependencies...')
-  //   updateVersions(targetVersion)
-
   // build all packages with types
   step('\nBuilding all packages...')
   if (!skipBuild && !isDryRun) {
