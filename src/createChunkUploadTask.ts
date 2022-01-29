@@ -1,4 +1,8 @@
-export type TFileChunkDataItem = {
+import calHash from './hash'
+import { isExist, isFunc } from '../utils/helpers'
+const SIZE = 10 * 1024 * 1024
+
+type TFileChunkDataItem = {
   fileHash: string
   chunk: Blob
   hash: string
@@ -10,24 +14,24 @@ interface uploadedStatus {
   uploadedList: string[]
 }
 
-export type TprogressInner = (e: any) => any // @todo
+type TprogressInner = (e: any) => any // @todo
 
-export type TprogressHanlder = (item: TFileChunkDataItem) => TprogressInner
+type TprogressHanlder = (item: TFileChunkDataItem) => TprogressInner
 
-export type TchunkRequest = (data: object, onProgress: TprogressHanlder) => void
+type TchunkRequest = (data: object, onProgress: TprogressHanlder) => void
 
-export type TcheckUploaded = (filename: string, fileHash: string) => uploadedStatus
+type TbeforeUpload = (filename: string, fileHash: string) => uploadedStatus
 
-export type TmergeRequest = (filename: string, size: number, fileHash: string) => void
+type Tuploaded = (fulfilled: boolean, filename: string, size: number, fileHash: string) => void
 
-export type TCalhash = {
+type TCalhash = {
   hash: string
   percentage: string
 }
-export interface IChunkUploadTask {
+interface IChunkUploadTask {
   chunkRequset: TchunkRequest
-  mergeRequest: TmergeRequest
-  checkUploaded: TcheckUploaded
+  uploaded: Tuploaded
+  beforeUpload: TbeforeUpload
   file: File
   size?: number
   allCal?: boolean
@@ -41,121 +45,153 @@ declare global {
   }
 }
 
-const SIZE = 10 * 1024 * 1024
-import calHash from './hash'
+// 创建切片和文件hash
+function createFileChunk(fileChunkList: { fileChunk: Blob }[], file: File, size: number) {
+  let cur = 0
+  // 分片
+  while (cur < file.size) {
+    fileChunkList.push({ fileChunk: file.slice(cur, cur + size) })
+    cur += size
+  }
+}
 
-export default async function createChunkUploadTask({
+function createfileChunkData(hash: string, fileChunkList: { fileChunk: Blob }[]) : TFileChunkDataItem[]{
+  return fileChunkList.map(({ fileChunk }, index) => ({
+    fileHash: hash,
+    chunk: fileChunk, // 切块
+    hash: `${hash}-${index}`, // hash值
+    percentage: 0,
+    index,
+  }))
+}
+
+// 计算hash
+function calculateHash(allCal: boolean, fileChunkList: { fileChunk: Blob }[], file: File): Promise<TCalhash> {
+  return new Promise((resolve) => {
+    const worker = new Worker(calHash)
+    worker.postMessage({ fileChunkList: allCal ? fileChunkList : file })
+    worker.onmessage = (e) => {
+      const { percentage, hash } = e.data
+      if (hash) {
+        resolve({ hash, percentage })
+      }
+    }
+  })
+}
+
+// 进度条
+function createProgressHandler(item: TFileChunkDataItem): TprogressInner {
+  return (e: any) => {
+    item.percentage = parseInt(String((e.loaded / e.total) * 100), 10)
+  }
+}
+
+function createUploadRequest(
+  uploadedList: string[] = [], 
+  fileChunkData: TFileChunkDataItem[], 
+  chunkRequset: TchunkRequest, 
+  file: File
+) {
+  const requsetList = fileChunkData
+    .filter(({ hash }) => !uploadedList.includes(hash))
+    .map(({
+      chunk, hash, fileHash, index,
+    }) => {
+      const formData = new FormData()
+      formData.append('fileHash', fileHash)
+      formData.append('chunk', chunk)
+      formData.append('hash', hash)
+      formData.append('filename', file.name)
+      return { formData, index }
+    })
+    .map(({ formData, index }) => () => chunkRequset(formData, createProgressHandler(fileChunkData[index])))
+  return requsetList
+}
+
+function getFilename(filename: string, hash: string): string {
+  if (!filename) return ''
+  const reg = /\.[^\.]+$/
+  const result: any = filename.match(reg)
+  return hash + result[0]
+}
+
+/**
+   *
+   * @param {*} requsetList 切片数组
+   * @param {*} concurrencyControlNum 并发数量
+   */
+async function concurrencyControl(requsetList: any, concurrencyControlNum: number) {
+  return new Promise((resolve) => {
+    const len = requsetList.length
+    let max = concurrencyControlNum
+    let counter = 0
+    let idx = 0
+    const start = async () => {
+      while (idx < len && max > 0) {
+        max--
+        // @todo slow start
+        requsetList[idx++]().then(() => {
+          max++
+          counter++
+          if (counter === len) {
+            resolve('ok') // @todo
+          } else {
+            start()
+          }
+        })
+      }
+    }
+    start()
+  })
+}
+
+async function createChunkUploadTask({
   chunkRequset,
-  mergeRequest,
+  uploaded,
   file,
-  checkUploaded,
+  beforeUpload,
   size = SIZE,
   allCal = true,
   concurNum = 4,
 }: IChunkUploadTask): Promise<void> {
   const fileChunkList: { fileChunk: Blob }[] = []
   let fileChunkData: TFileChunkDataItem[] = []
-  // 创建切片和文件hash
-  function createFileChunk() {
-    let cur = 0
-    // 分片
-    while (cur < file.size) {
-      fileChunkList.push({ fileChunk: file.slice(cur, cur + size) })
-      cur += size
+  let uploadedList: string[] =[]
+
+  createFileChunk(fileChunkList, file, size)
+  const { hash } = await calculateHash(allCal, fileChunkList, file)
+  fileChunkData = createfileChunkData(hash, fileChunkList)
+
+
+  // beforeUpload @todo
+  if (isExist(beforeUpload) && isFunc(beforeUpload)) {
+    const obj = await beforeUpload(file.name, hash)
+    uploadedList = obj.uploadedList
+    
+    if (!obj.shouldUpload) {
+      // 不许要重新上传 @todo
+      console.log('上传过了')
+      return
     }
   }
 
-  function createfileChunkData(hash: string) {
-    fileChunkData = fileChunkList.map(({ fileChunk }, index) => ({
-      fileHash: hash,
-      chunk: fileChunk, // 切块
-      hash: `${hash}-${index}`, // hash值
-      percentage: 0,
-      index,
-    }))
-  }
+  
 
-  // 计算hash
-  function calculateHash(): Promise<TCalhash> {
-    return new Promise((resolve) => {
-      const worker = new Worker(calHash)
-      worker.postMessage({ fileChunkList: allCal ? fileChunkList : file })
-      worker.onmessage = (e) => {
-        const { percentage, hash } = e.data
-        if (hash) {
-          resolve({ hash, percentage })
-        }
-      }
-    })
-  }
-
-  // 进度条
-  function createProgressHandler(item: TFileChunkDataItem): TprogressInner {
-    return (e: any) => {
-      item.percentage = parseInt(String((e.loaded / e.total) * 100), 10)
-    }
-  }
-  function createUploadRequest(uploadedList: string[] = []) {
-    const requsetList = fileChunkData
-      .filter(({ hash }) => !uploadedList.includes(hash))
-      .map(({
-        chunk, hash, fileHash, index,
-      }) => {
-        const formData = new FormData()
-        formData.append('fileHash', fileHash)
-        formData.append('chunk', chunk)
-        formData.append('hash', hash)
-        formData.append('filename', file.name)
-        return { formData, index }
-      })
-      .map(({ formData, index }) => () => chunkRequset(formData, createProgressHandler(fileChunkData[index])))
-    return requsetList
-  }
-  /**
-     *
-     * @param {*} requsetList 切片数组
-     * @param {*} concurrencyControlNum 并发数量
-     */
-  async function concurrencyControl(requsetList: any, concurrencyControlNum: number) {
-    return new Promise((resolve) => {
-      const len = requsetList.length
-      let max = concurrencyControlNum
-      let counter = 0
-      let idx = 0
-      const start = async () => {
-        while (idx < len && max > 0) {
-          max--
-          // @todo
-          requsetList[idx++]().then(() => {
-            max++
-            counter++
-            if (counter === len) {
-              resolve('ok') // @todo
-            } else {
-              start()
-            }
-          })
-        }
-      }
-      start()
-    })
-  }
-
-  createFileChunk()
-  const { hash } = await calculateHash()
-  createfileChunkData(hash)
-  const { shouldUpload, uploadedList } = await checkUploaded(file.name, hash)
-  if (!shouldUpload) {
-    // 不许要重新上传 @todo
-    console.log('上传过了')
-    return
-  }
   // 创建切片请求
-  const requsetList = createUploadRequest(uploadedList)
-  // 并发控制 todo
+  const requsetList = createUploadRequest(uploadedList, fileChunkData, chunkRequset, file)
+  // 并发控制 @todo
   await concurrencyControl(requsetList, concurNum)
-  // 请求合并 todo
-  if (uploadedList.length + requsetList.length === fileChunkData.length) {
-    await mergeRequest(file.name, size, hash)
+  // uploadedList and requsetList equal fileChunkData mean that 
+  // all chunks had been uploaded 
+  const fulfilled: boolean = uploadedList.length + requsetList.length === fileChunkData.length
+  if (isExist(uploaded) && isFunc(uploaded)) {
+    await uploaded(fulfilled, getFilename(file.name, hash), size, hash)
   }
 }
+
+function main(options: IChunkUploadTask) {
+  // if (!validate(options)) callHooks()
+  createChunkUploadTask(options)
+}
+
+export default main
