@@ -70,7 +70,7 @@ function calHash () {
 } 
 
 /**
- * it will be shaked on build by rollup if don't do that
+ * it will be shaked on build stage by rollup if don't do that
  */
 const blob = new Blob(['(' + calHash.toString() +')()']);
 export default window.URL.createObjectURL(blob)

@@ -1,5 +1,14 @@
 import calHash from './hash'
 import { isExist, isFunc } from '../utils/helpers'
+import validate from "../utils/validate";
+// self.importScripts or either will doesn't work it declare that
+declare global {
+  interface Window {
+    importScripts: any
+    SparkMD5: any
+  }
+}
+
 const SIZE = 10 * 1024 * 1024
 
 type TFileChunkDataItem = {
@@ -20,7 +29,7 @@ type TprogressHanlder = (item: TFileChunkDataItem) => TprogressInner
 
 type TchunkRequest = (data: object, onProgress: TprogressHanlder) => void
 
-type TbeforeUpload = (filename: string, fileHash: string) => uploadedStatus
+type TbeforeUpload = (filename: string, fileHash: string, fileChunk: TFileChunkDataItem[]) => uploadedStatus
 
 type Tuploaded = (fulfilled: boolean, filename: string, size: number, fileHash: string) => void
 
@@ -28,7 +37,7 @@ type TCalhash = {
   hash: string
   percentage: string
 }
-interface IChunkUploadTask {
+export interface IChunkUploadTask {
   chunkRequset: TchunkRequest
   uploaded: Tuploaded
   beforeUpload: TbeforeUpload
@@ -36,13 +45,6 @@ interface IChunkUploadTask {
   size?: number
   allCal?: boolean
   concurNum?: number
-}
-// self.importScripts or either will doesn't work it declare that
-declare global {
-  interface Window {
-    importScripts: any
-    SparkMD5: any
-  }
 }
 
 // 创建切片和文件hash
@@ -66,13 +68,14 @@ function createfileChunkData(hash: string, fileChunkList: { fileChunk: Blob }[])
 }
 
 // 计算hash
-function calculateHash(allCal: boolean, fileChunkList: { fileChunk: Blob }[], file: File): Promise<TCalhash> {
+function calculateHash(allCal: boolean = false, fileChunkList: { fileChunk: Blob }[], file: File): Promise<TCalhash> {
   return new Promise((resolve) => {
     const worker = new Worker(calHash)
     worker.postMessage({ fileChunkList: allCal ? fileChunkList : file })
     worker.onmessage = (e) => {
       const { percentage, hash } = e.data
       if (hash) {
+        //  percentage 这里的 不知道干嘛用
         resolve({ hash, percentage })
       }
     }
@@ -144,54 +147,75 @@ async function concurrencyControl(requsetList: any, concurrencyControlNum: numbe
     start()
   })
 }
-
-async function createChunkUploadTask({
-  chunkRequset,
-  uploaded,
-  file,
-  beforeUpload,
-  size = SIZE,
-  allCal = true,
-  concurNum = 4,
-}: IChunkUploadTask): Promise<void> {
-  const fileChunkList: { fileChunk: Blob }[] = []
-  let fileChunkData: TFileChunkDataItem[] = []
-  let uploadedList: string[] =[]
-
-  createFileChunk(fileChunkList, file, size)
-  const { hash } = await calculateHash(allCal, fileChunkList, file)
-  fileChunkData = createfileChunkData(hash, fileChunkList)
-
-
-  // beforeUpload @todo
-  if (isExist(beforeUpload) && isFunc(beforeUpload)) {
-    const obj = await beforeUpload(file.name, hash)
-    uploadedList = obj.uploadedList
-    
-    if (!obj.shouldUpload) {
-      // 不许要重新上传 @todo
-      console.log('上传过了')
-      return
-    }
+class ChunkUploadTask {
+  fileChunkList: { fileChunk: Blob }[] = []
+  fileChunkData: TFileChunkDataItem[] = []
+  uploadedList: string[] = []
+  hashFilename: string = '' 
+  hash: string = ''
+  chunkRequset: TchunkRequest
+  uploaded: Tuploaded
+  file: File
+  beforeUpload: TbeforeUpload
+  size: number
+  allCal: boolean
+  concurNum: number
+  constructor({
+    chunkRequset,
+    uploaded,
+    file,
+    beforeUpload,
+    size = SIZE,
+    allCal = true,
+    concurNum = 4,
+  }: IChunkUploadTask){
+    this.chunkRequset = chunkRequset
+    this.uploaded = uploaded
+    this.beforeUpload = beforeUpload
+    this.file = file
+    this.size = size
+    this.allCal = allCal
+    this.concurNum = concurNum
+  }
+  
+  public async on(): Promise<TFileChunkDataItem[]> {
+    createFileChunk(this.fileChunkList, this.file, this.size)
+    // @todo 返回值可能需要优化
+    const { hash } = await calculateHash(this.allCal, this.fileChunkList, this.file)
+    this.hash = hash
+    this.hashFilename = getFilename(this.file.name, this.hash)
+    this.fileChunkData = createfileChunkData(this.hash, this.fileChunkList)
+    return this.fileChunkData
   }
 
-  
-
-  // 创建切片请求
-  const requsetList = createUploadRequest(uploadedList, fileChunkData, chunkRequset, file)
-  // 并发控制 @todo
-  await concurrencyControl(requsetList, concurNum)
-  // uploadedList and requsetList equal fileChunkData mean that 
-  // all chunks had been uploaded 
-  const fulfilled: boolean = uploadedList.length + requsetList.length === fileChunkData.length
-  if (isExist(uploaded) && isFunc(uploaded)) {
-    await uploaded(fulfilled, getFilename(file.name, hash), size, hash)
+  public async send() {
+    // beforeUpload @todo
+    if (isExist(this.beforeUpload) && isFunc(this.beforeUpload)) {
+      const obj = await this.beforeUpload(this.hashFilename, this.hash, this.fileChunkData)
+      this.uploadedList = obj.uploadedList
+      if (!obj.shouldUpload) {
+        // 不许要重新上传 @todo
+        console.log('上传过了')
+        return
+      }
+    }
+    // 创建切片请求
+    const requsetList = createUploadRequest(this.uploadedList, this.fileChunkData, this.chunkRequset, this.file)
+    // 并发控制 @todo
+    await concurrencyControl(requsetList, this.concurNum)
+    
+    // uploadedList and requsetList equal fileChunkData mean that 
+    // all chunks had been uploaded 
+    const fulfilled: boolean = this.uploadedList.length + requsetList.length === this.fileChunkData.length
+    if (isExist(this.uploaded) && isFunc(this.uploaded)) {
+      await this.uploaded(fulfilled, getFilename(this.hashFilename, this.hash), this.size, this.hash)
+    }
   }
 }
 
 function main(options: IChunkUploadTask) {
-  // if (!validate(options)) callHooks()
-  createChunkUploadTask(options)
+  if (!validate(options)) return // @todo 怎么报错比较合适
+  return new ChunkUploadTask(options)
 }
 
 export default main

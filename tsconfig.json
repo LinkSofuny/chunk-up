@@ -8,6 +8,7 @@
         "lib": ["DOM", "es5", "es2015.promise", "es2016"],
         "allowJs": true,
         "checkJs": true,
+        "declaration": true,
         "removeComments": true,
         "strict": true,
         "noUnusedLocals": true,
