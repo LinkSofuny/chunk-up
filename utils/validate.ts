@@ -3,6 +3,7 @@ import { isFunc, getType } from './helpers'
 
 export default function validate (options: IChunkUploadTask): boolean {
     const {chunkRequset, file} = options
+    
     if (!chunkRequset || !isFunc(chunkRequset)) {
         errorInfo('chunkRequset requires that file be a Function')
         return false

@@ -1,5 +1,5 @@
 {
-  "name": "frag-upload",
+  "name": "chunk-up",
   "version": "1.0.0",
   "description": "一个开箱即用的断点续传工具",
   "type": "module",

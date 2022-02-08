@@ -113,6 +113,8 @@ async function main() {
   await runIfNotDry('git', ['push', 'origin', `refs/tags/v${targetVersion}`])
   await runIfNotDry('git', ['push'])
 
+  await runIfNotDry('npm', ['publish'])
+
   if (isDryRun) {
     console.log('\nDry run finished - run git diff to see package changes.')
   }

@@ -1,6 +1,6 @@
 import calHash from './hash'
-import { isExist, isFunc } from '../utils/helpers'
 import validate from "../utils/validate";
+import callHooks from './hooks';
 // self.importScripts or either will doesn't work it declare that
 declare global {
   interface Window {
@@ -150,6 +150,7 @@ async function concurrencyControl(requsetList: any, concurrencyControlNum: numbe
 class ChunkUploadTask {
   fileChunkList: { fileChunk: Blob }[] = []
   fileChunkData: TFileChunkDataItem[] = []
+  requsetList: any[] =[]
   uploadedList: string[] = []
   hashFilename: string = '' 
   hash: string = ''
@@ -190,26 +191,13 @@ class ChunkUploadTask {
 
   public async send() {
     // beforeUpload @todo
-    if (isExist(this.beforeUpload) && isFunc(this.beforeUpload)) {
-      const obj = await this.beforeUpload(this.hashFilename, this.hash, this.fileChunkData)
-      this.uploadedList = obj.uploadedList
-      if (!obj.shouldUpload) {
-        // 不许要重新上传 @todo
-        console.log('上传过了')
-        return
-      }
-    }
+    if (!await callHooks(this, 'beforeUpload')) return
     // 创建切片请求
-    const requsetList = createUploadRequest(this.uploadedList, this.fileChunkData, this.chunkRequset, this.file)
+    this.requsetList = createUploadRequest(this.uploadedList, this.fileChunkData, this.chunkRequset, this.file)
     // 并发控制 @todo
-    await concurrencyControl(requsetList, this.concurNum)
+    await concurrencyControl(this.requsetList, this.concurNum)
     
-    // uploadedList and requsetList equal fileChunkData mean that 
-    // all chunks had been uploaded 
-    const fulfilled: boolean = this.uploadedList.length + requsetList.length === this.fileChunkData.length
-    if (isExist(this.uploaded) && isFunc(this.uploaded)) {
-      await this.uploaded(fulfilled, getFilename(this.hashFilename, this.hash), this.size, this.hash)
-    }
+    await callHooks(this, 'uploaded')
   }
 }
 
