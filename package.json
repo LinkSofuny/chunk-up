@@ -1,6 +1,6 @@
 {
   "name": "chunk-up",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "一个开箱即用的断点续传工具",
   "type": "module",
   "types": "dist/chunkUp.d.ts",
@@ -9,7 +9,7 @@
   "scripts": {
     "test": "jest",
     "release": "node --experimental-json-modules scripts/release.js",
-    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -w -r 0",
     "build:esm": "rollup -c --environment FORMAT:esm",
     "build:umd": "rollup -c --environment FORMAT:umd",
     "build:min": "rollup -c --environment FORMAT:min",
