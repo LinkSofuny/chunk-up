@@ -2,9 +2,14 @@ import chalk from 'chalk'
 import semver from 'semver'
 import enquirer from 'enquirer'
 import minimist from 'minimist'
+import * as fs from 'fs';
 import { execa } from 'execa'
 // eslint-disable-next-line import/extensions
 import packageJSON from '../package.json'
+import path from 'path'
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const args = minimist(process.argv.slice(2))
 const currentVersion = packageJSON.version
@@ -32,6 +37,19 @@ const runIfNotDry = isDryRun ? dryRun : run
 
 const step = (msg) => console.log(chalk.cyan(msg))
 
+async function publishPackage (targetVersion, runIfNotDry) {
+  const pkgPath = path.resolve(__dirname, '../package.json')
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
+  pkg.version = targetVersion
+  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
+  try {
+    await runIfNotDry('npm', ['publish'])
+    console.log(chalk.green(`Successfully published chunk-up@${targetVersion}`))
+  } catch (error) {
+    throw error
+  }
+}
+
 async function main() {
   let targetVersion = args._[0]
 
@@ -55,8 +73,7 @@ async function main() {
         })
       ).version
     } else {
-      // it's equal with targetVersion = release.match(/\((.*)\)/)[1]
-      [targetVersion] = release.match(/\((.*)\)/)
+      targetVersion = release.match(/\((.*)\)/)[1]
     }
   }
 
@@ -107,13 +124,14 @@ async function main() {
     console.log('No changes to commit.')
   }
 
+  step('\nPublishing packages...')
+  await publishPackage(targetVersion, runIfNotDry)
+  
   // push to GitHub
   step('\nPushing to GitHub...')
   await runIfNotDry('git', ['tag', `v${targetVersion}`])
   await runIfNotDry('git', ['push', 'origin', `refs/tags/v${targetVersion}`])
   await runIfNotDry('git', ['push'])
-
-  await runIfNotDry('npm', ['publish'])
 
   if (isDryRun) {
     console.log('\nDry run finished - run git diff to see package changes.')
