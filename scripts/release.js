@@ -77,9 +77,9 @@ async function main() {
     }
   }
 
-  // if (!semver.valid(targetVersion)) {
-  //   throw new Error(`invalid target version: ${targetVersion}`)
-  // }
+  if (!semver.valid(targetVersion)) {
+    throw new Error(`invalid target version: ${targetVersion}`)
+  }
 
   const { yes } = await prompt({
     type: 'confirm',

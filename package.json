@@ -1,11 +1,11 @@
 {
   "name": "chunk-up",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "一个开箱即用的断点续传工具",
   "type": "module",
-  "types": "dist/fragUpload.d.ts",
-  "main": "dist/fragUpload.umd.js",
-  "module": "dist/fragUpload.esm.js",
+  "types": "dist/chunkUp.d.ts",
+  "main": "dist/chunkUp.umd.js",
+  "module": "dist/chunkUp.esm.js",
   "scripts": {
     "test": "jest",
     "release": "node --experimental-json-modules scripts/release.js",
@@ -17,13 +17,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LinkSofuny/frag-upload.git"
+    "url": "git+https://github.com/LinkSofuny/chunk-up.git"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/LinkSofuny/frag-upload/issues"
+    "url": "https://github.com/LinkSofuny/chunk-up/issues"
   },
   "files": [
     "index.js",
@@ -31,7 +31,7 @@
     "README.md",
     "CHANGELOG.md"
   ],
-  "homepage": "https://github.com/LinkSofuny/frag-upload#readme",
+  "homepage": "https://github.com/LinkSofuny/chunk-up#readme",
   "devDependencies": {
     "@babel/core": "^7.16.12",
     "@babel/preset-env": "^7.16.11",
