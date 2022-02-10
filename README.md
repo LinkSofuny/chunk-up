@@ -3,7 +3,8 @@
 </div>
 
 <div align=center>
-  <a href="https://github.com/vuejs/vue"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
+  <a href="https://github.com/LinkSofuny/chunk-up"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
+  <a href="https://www.npmjs.com/package/chunk-up"><img src="https://img.shields.io/npm/v/chunk-up" alt="Version"></a>
 </div>
 
 一个开箱即用的切片上传工具, 支持断点续传, 并发控制, 采用worker线程计算hash, 保证性能的同时, 保证准确性.
