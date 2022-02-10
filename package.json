@@ -1,6 +1,6 @@
 {
   "name": "chunk-up",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "一个开箱即用的断点续传工具",
   "type": "module",
   "types": "dist/chunkUp.d.ts",

@@ -115,6 +115,9 @@ async function main() {
   step('\nGenerating changelog...')
   await run('npm', ['run', 'changelog'])
 
+  step('\nPublishing packages...')
+  await publishPackage(targetVersion, runIfNotDry)
+
   const { stdout } = await run('git', ['diff'], { stdio: 'pipe' })
   if (stdout) {
     step('\nCommitting changes...')
@@ -123,9 +126,6 @@ async function main() {
   } else {
     console.log('No changes to commit.')
   }
-
-  step('\nPublishing packages...')
-  await publishPackage(targetVersion, runIfNotDry)
   
   // push to GitHub
   step('\nPushing to GitHub...')
